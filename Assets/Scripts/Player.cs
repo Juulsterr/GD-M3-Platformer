@@ -3,15 +3,17 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.UIElements;
-
+using UnityEngine.UI;
 public class Player : MonoBehaviour
 {
+    public int coins;
     public int health = 100; // Player health
     public float speed = 5f; // Player movement speed
     public float jumpForce = 10f; // Force applied when the player jumps
     public Transform groundCheck; // Transform used to check if the player is grounded
     public float groundCheckRadius = 0.2f; // Radius for the ground check
     public LayerMask groundLayer; // Layer mask to identify what is considered ground
+    public UnityEngine.UI.Image healthImage;
     private Rigidbody2D rb; // Reference to the player's Rigidbody2D component
     private bool isGrounded; // Flag to check if the player is on the ground
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -50,9 +52,11 @@ public class Player : MonoBehaviour
                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce); // Apply a vertical force to make the player jump
                extraJumps--; // Decrease the number of extra jumps left
             }
+           
         }
 
         setAnimation(moveInput);
+        healthImage.fillAmount = health / 100f; // Update the health bar fill amount based on the player's health
     }
     private void FixedUpdate()
         {
@@ -98,6 +102,16 @@ public class Player : MonoBehaviour
                 Die();
             }
         }
+         if (collision.gameObject.tag == "Death")
+        {
+            health -= 100;
+            StartCoroutine(BlinkRed());
+
+            if (health <= 0)
+            {
+                Die();
+            }
+        }
     }
 
     private IEnumerator BlinkRed()
@@ -109,7 +123,7 @@ public class Player : MonoBehaviour
 
     private void Die()
     {
-        UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene"); // Reload the current scene (scene index 0)
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name); // Reload the current scene
     }
 
 }
