@@ -14,11 +14,14 @@ public class Player : MonoBehaviour
     public float groundCheckRadius = 0.2f; // Radius for the ground check
     public LayerMask groundLayer; // Layer mask to identify what is considered ground
     public UnityEngine.UI.Image healthImage;
+    public AudioClip jumpClip;
+    public AudioClip HurtClip;
     private Rigidbody2D rb; // Reference to the player's Rigidbody2D component
     private bool isGrounded; // Flag to check if the player is on the ground
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     private Animator animator; // Reference to the Animator component
     private SpriteRenderer spriteRenderer; // Reference to the SpriteRenderer component
+    private AudioSource audioSource; // Reference to the AudioSource component  
     public int extraJumpsValue = 1;
     private int extraJumps;
     void Start()
@@ -26,7 +29,7 @@ public class Player : MonoBehaviour
         rb = GetComponent<Rigidbody2D>(); // Get the Rigidbody2D component attached to the player
         animator = GetComponent<Animator>(); // Get the Animator component attached to the player
         spriteRenderer = GetComponent<SpriteRenderer>(); // Get the SpriteRenderer component attached to the player
-
+        audioSource = GetComponent<AudioSource>(); // Get the AudioSource component attached to the player
         extraJumps = extraJumpsValue; // Initialize extra jumps to the specified value
     }
 
@@ -46,63 +49,67 @@ public class Player : MonoBehaviour
             if (isGrounded)
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce); // Apply a vertical force to make the player jump
+                PlaySFX(jumpClip); // Play the jump sound effect
             }
-            else if(extraJumps > 0)
+            else if (extraJumps > 0)
             {
-               rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce); // Apply a vertical force to make the player jump
-               extraJumps--; // Decrease the number of extra jumps left
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce); // Apply a vertical force to make the player jump
+                extraJumps--; // Decrease the number of extra jumps left
+                PlaySFX(jumpClip);
             }
-           
+
         }
 
         setAnimation(moveInput);
         healthImage.fillAmount = health / 100f; // Update the health bar fill amount based on the player's health
     }
     private void FixedUpdate()
-        {
-            isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer); // Check if the player is grounded using an overlap circle
-        }
+    {
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer); // Check if the player is grounded using an overlap circle
+    }
 
-        private void setAnimation(float moveInput)
+    private void setAnimation(float moveInput)
+    {
+        if (isGrounded)
         {
-            if (isGrounded)
+            if (moveInput == 0)
             {
-                if (moveInput == 0)
-                {
-                    animator.Play("Player_idle"); // Play idle animation when the player is not moving
-                }
-                else
-                {
-                    animator.Play("Player_Run"); // Play running animation when the player is moving
-                }    
-                    }
-                    else
-                    {
-                    if(rb.linearVelocityY > 0)
-                    {
-                        animator.Play("Player_Jump"); // Play jump animation when the player is moving upwards
-                    }
-                    else
-                    {
-                        animator.Play("Player_Fall"); // Play fall animation when the player is moving downwards
-                    }
-                    }
+                animator.Play("Player_idle"); // Play idle animation when the player is not moving
+            }
+            else
+            {
+                animator.Play("Player_Run"); // Play running animation when the player is moving
+            }
         }
-        
-        private void OnCollisionEnter2D(Collision2D collision)
+        else
+        {
+            if (rb.linearVelocityY > 0)
+            {
+                animator.Play("Player_Jump"); // Play jump animation when the player is moving upwards
+            }
+            else
+            {
+                animator.Play("Player_Fall"); // Play fall animation when the player is moving downwards
+            }
+        }
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.tag == "Damage")
         {
+            PlaySFX(HurtClip);
             health -= 25;
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce); // Apply a vertical force to make the player jump
             StartCoroutine(BlinkRed());
+
 
             if (health <= 0)
             {
                 Die();
             }
         }
-         if (collision.gameObject.tag == "Death")
+        if (collision.gameObject.tag == "Death")
         {
             health -= 100;
             StartCoroutine(BlinkRed());
@@ -124,6 +131,12 @@ public class Player : MonoBehaviour
     private void Die()
     {
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name); // Reload the current scene
+    }
+
+    private void PlaySFX(AudioClip audioclip)
+    {
+        audioSource.clip = audioclip; // Set the specified audio clip to the AudioSource component
+        audioSource.Play(); // Play the specified audio clip using the AudioSource component
     }
 
 }
